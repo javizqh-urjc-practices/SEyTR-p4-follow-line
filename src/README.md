@@ -2,10 +2,10 @@
 
 ## Tareas
 
-- Tarea: Motores; Prioridad:
-- Tarea: Ultrasonidos; Prioridad:
-- Tarea: Infrarrojos; Prioridad:
-- Tarea: Idle (Comunicación y debug led); Prioridad: 0
+- Tarea: Motores; Prioridad: ; Encargado: Luis;
+- Tarea: Ultrasonidos; Prioridad: ; Encargado: Luis;
+- Tarea: Infrarrojos; Prioridad: ; Encargado: Javier;
+- Tarea: Idle (Comunicación y debug led); Prioridad: 0; Encargado: Javier;
 
 ## Paso de información entre tareas
 
