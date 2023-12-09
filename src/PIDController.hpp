@@ -16,7 +16,6 @@
 #ifndef SEEK_AND_CAPTURE_FOROCOCHES__PIDCONTROLLER_HPP_
 #define SEEK_AND_CAPTURE_FOROCOCHES__PIDCONTROLLER_HPP_
 
-#include <cmath>
 
 namespace seek_and_capture_forocoches
 {

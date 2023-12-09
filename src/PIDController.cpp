@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <algorithm>
-
-#include "seek_and_capture_forocoches/PIDController.hpp"
 
 namespace seek_and_capture_forocoches
 {
