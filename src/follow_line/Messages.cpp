@@ -4,10 +4,10 @@
 
 #define MAX_MSG_LENGTH 128
 
-#define MSG_BASE "{\n\t\"team_name\": \"%s\",\n\t\"id\": \"%s\",\n\t\"action\": \"%s\"\n}"
-#define MSG_TIME "{\n\t\"team_name\": \"%s\",\n\t\"id\": \"%s\",\n\t\"action\": \"%s\",\n\t\"time\": %ld\n}"
-#define MSG_DIST "{\n\t\"team_name\": \"%s\",\n\t\"id\": \"%s\",\n\t\"action\": \"%s\",\n\t\"distance\": %d\n}"
-#define MSG_VAL "{\n\t\"team_name\": \"%s\",\n\t\"id\": \"%s\",\n\t\"action\": \"%s\",\n\t\"value\": %.2f\n}"
+#define MSG_BASE "{\"team_name\": \"%s\", \"id\": \"%s\", \"action\": \"%s\"}"
+#define MSG_TIME "{\"team_name\": \"%s\", \"id\": \"%s\", \"action\": \"%s\", \"time\": %ld}"
+#define MSG_DIST "{\"team_name\": \"%s\", \"id\": \"%s\", \"action\": \"%s\", \"distance\": %d}"
+#define MSG_VAL "{\"team_name\": \"%s\", \"id\": \"%s\", \"action\": \"%s\", \"value\": %.2f}"
 
 Messages::Messages(char _team_name[MAX_TEAM_STR_SIZE],
                    char _team_id[MAX_ID_STR_SIZE]) {
@@ -47,6 +47,8 @@ void Messages::send_message() {
     return;
   }
 
+  if (queue_size == 0) return; // No messages to send
+
   switch (queue[0].type) {
     case START_LAP:
       init_time = millis();
@@ -84,4 +86,16 @@ void Messages::send_message() {
     queue[i + 1] = queue[i];
   }
   queue_size--;
+}
+
+void wait_connection() {
+  while(1) {
+      if (Serial.available()) {
+        char c = Serial.read();
+        if (c == '}')  { // Wait for message        
+          break;
+        } 
+
+      }
+    }
 }

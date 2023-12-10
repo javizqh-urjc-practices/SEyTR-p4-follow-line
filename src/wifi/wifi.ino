@@ -85,6 +85,7 @@ void MQTT_connect() {
        }
   }
   Serial.println("MQTT Connected!");
+  Serial2.print("{Start}");
 }
 
 void setup() {

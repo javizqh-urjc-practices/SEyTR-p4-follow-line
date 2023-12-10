@@ -29,6 +29,7 @@ public:
     void add_message(msg_type type, int distance); // For messages with distance
     void add_message(msg_type type, float val); // For messages with percentage
     void send_message();
+    void wait_connection();
 
 private:
     // Queue of messages
