@@ -16,7 +16,7 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   send_msg->wait_connection();
-  xTaskCreate(idleTask, "IdleTask", 100, NULL);
+  xTaskCreate(idleTask, "IdleTask", 100, NULL, 0, NULL);
 }
 
 void loop() {
