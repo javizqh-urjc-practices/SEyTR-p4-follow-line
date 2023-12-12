@@ -25,13 +25,15 @@
 #define PIN_Motor_PWMB 6
 
 // Speeds, from 0-255
-#define HIGH_SPEED 255
-#define MEDIUM_SPEED 127
+#define HIGH_SPEED 150
+#define MEDIUM_SPEED 80
 
 #define PERIODIC_IDLE 100
-#define PERIODIC_MOTORS 100
-#define PERIODIC_INFRARRED 100
-#define PERIODIC_ULTRASOUND 100
+#define PERIODIC_MOTORS 25
+#define PERIODIC_INFRARRED 50
+#define PERIODIC_ULTRASOUND 75
+
+#define ULTRASOUND_THRESHOLD 16
 
 typedef enum {
   TURN_LEFT,
@@ -118,8 +120,9 @@ static void Ultrasonido(void* pvParameters) {
     // measure duration of pulse from ECHO pin and calculate the distance
     distance_cm = 0.017 * pulseIn(ECHO_PIN, HIGH); 
 
-    if (distance_cm <= 8) {
+    if (distance_cm <= ULTRASOUND_THRESHOLD) {
       destination = STOP;
+      stopMotors();
       digitalWrite(PIN_Motor_STBY, LOW);
     }
 
@@ -191,7 +194,7 @@ static void idleTask(void * arg) {
   TickType_t xLastWakeTime, aux;
   while (1) {
     xLastWakeTime = xTaskGetTickCount();
-    send_msg->send_message();
+    // send_msg->send_message();
     xTaskDelayUntil( &xLastWakeTime, (PERIODIC_IDLE / portTICK_PERIOD_MS));
   }
 }
@@ -218,7 +221,7 @@ void setup() {
   pinMode(PIN_ITR20001_MIDDLE, INPUT);
   pinMode(PIN_ITR20001_RIGHT, INPUT);
 
-  send_msg->wait_connection();
+  // send_msg->wait_connection();
   xTaskCreate(idleTask, "IdleTask", 100, NULL, 0, NULL);
   xTaskCreate(Motors, "Motors", 100, NULL, 4, NULL);
   xTaskCreate(Infrarred, "Infrarred", 100, NULL, 3, NULL);
