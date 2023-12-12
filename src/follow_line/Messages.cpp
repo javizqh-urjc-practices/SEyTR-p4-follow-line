@@ -88,7 +88,7 @@ void Messages::send_message() {
   queue_size--;
 }
 
-void wait_connection() {
+void Messages::wait_connection() {
   while(1) {
       if (Serial.available()) {
         char c = Serial.read();
