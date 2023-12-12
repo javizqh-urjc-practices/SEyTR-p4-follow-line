@@ -24,6 +24,7 @@
 #include "WiFi.h"
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
+#include "Messages.hpp"
 
 /************************* WiFi Access Point *********************************/
 #define WLAN_SSID       "wifieif"
@@ -88,6 +89,34 @@ void MQTT_connect() {
   Serial2.print("{Start}");
 }
 
+unsigned long get_time(char time[MAX_MSG_LENGTH]) {
+  unsigned long curr_num = 0;
+  char *ptr = time;
+  ptr += 1; // Remove 2 spaces and msg id
+
+  for (ptr; *ptr != '|'; ptr++) {
+    if (*ptr >= '0' && *ptr <= '9') {
+      curr_num = 10 * curr_num + *ptr - '0';
+    }
+  }
+
+  return curr_num;
+}
+
+int get_dst(char distance[MAX_MSG_LENGTH]) {
+  int curr_num = 0;
+  char *ptr = distance;
+  ptr += 1; // Remove 2 spaces and msg id
+
+  for (ptr; *ptr != '|'; ptr++) {
+    if (*ptr >= '0' && *ptr <= '9') {
+      curr_num = 10 * curr_num + *ptr - '0';
+    }
+  }
+
+  return curr_num;
+}
+
 void setup() {
 
   Serial.begin(9600);
@@ -95,14 +124,17 @@ void setup() {
   // Serial port to communicate with Arduino UNO
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
 
-  initWiFi();
+  // initWiFi();
+  Serial2.print("{Start}");
   
 }
 
 String sendBuff;
+char to_send[MAX_MSG_LENGTH];
+char msg_buffer[MAX_MSG_LENGTH];
 
 void loop() {
-  MQTT_connect();
+  // MQTT_connect();
   // We always check if there is data in the serial buffer (max: 64 bytes)
 
   if (Serial2.available()) {
@@ -110,10 +142,41 @@ void loop() {
     char c = Serial2.read();
     sendBuff += c;
     
-    if (c == '}')  {            
-      Serial.print("Received data in serial port from Arduino: ");
-      Serial.println(sendBuff);
-      publisher.publish(sendBuff);
+    if (c == '|')  {            
+      strcpy(msg_buffer, sendBuff.c_str());
+
+      switch (*msg_buffer) { // Remove 2 initial spaces
+        case '0':
+          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "START_LAP");
+          break;
+        case '1':
+          sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "END_LAP", get_time(msg_buffer));
+          break;
+        case '2':
+          sprintf(to_send, MSG_DIST, TEAM_STR, ID_STR, "OBSTACLE_DETECTED", get_dst(msg_buffer));
+          break;
+        case '3':
+          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "LINE_LOST");
+          break;
+        case '4':
+          sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "PING", get_time(msg_buffer));
+          break;
+        case '5':
+          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "INIT_LINE_SEARCH");
+          break;
+        case '6':
+          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "STOP_LINE_SEARCH");
+          break;
+        case '7':
+          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "LINE_FOUND");
+          break;
+        case '8':
+          sprintf(to_send, MSG_VAL, TEAM_STR, ID_STR, "VISIBLE_LINE", 1.0);
+          break;
+      }
+      //publish.publish(to_send);
+      Serial.println(to_send);
+      // Serial.println(sendBuff);
 
       sendBuff = "";
     } 

@@ -1,5 +1,6 @@
 #include <Arduino_FreeRTOS.h>
 #include "Messages.hpp"
+#include "FastLED.h"
 
 #define TRIG_PIN 13  
 #define ECHO_PIN 12 
@@ -25,15 +26,17 @@
 #define PIN_Motor_PWMB 6
 
 // Speeds, from 0-255
-#define HIGH_SPEED 150
-#define MEDIUM_SPEED 80
+#define HIGH_SPEED 175
+#define MEDIUM_SPEED 90
 
-#define PERIODIC_IDLE 100
-#define PERIODIC_MOTORS 25
+#define PERIODIC_IDLE 150
+#define PERIODIC_MOTORS 50
 #define PERIODIC_INFRARRED 50
-#define PERIODIC_ULTRASOUND 75
+#define PERIODIC_ULTRASOUND 150
 
 #define ULTRASOUND_THRESHOLD 16
+#define PIN_RBGLED 4
+#define NUM_LEDS 1
 
 typedef enum {
   TURN_LEFT,
@@ -45,8 +48,14 @@ typedef enum {
 } directions;
 
 Messages *send_msg = new Messages("Forocoches", "3");
+CRGB leds[NUM_LEDS];
 directions destination = 0;
 directions last_destination = 0;
+
+uint32_t Color(uint8_t r, uint8_t g, uint8_t b) {
+  return (((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
+}
+
 
 void moveForward() {
   analogWrite(PIN_Motor_PWMA, HIGH_SPEED);
@@ -106,7 +115,7 @@ void stopMotors() {
 
 static void Ultrasonido(void* pvParameters) {
   TickType_t xLastWakeTime, aux;
-  int distance_cm;
+  int distance_cm = 0;
 
   while(1) { 
     xLastWakeTime = xTaskGetTickCount();
@@ -118,12 +127,18 @@ static void Ultrasonido(void* pvParameters) {
     digitalWrite(TRIG_PIN, LOW);
 
     // measure duration of pulse from ECHO pin and calculate the distance
-    distance_cm = 0.017 * pulseIn(ECHO_PIN, HIGH); 
+    distance_cm = 0.017 * pulseIn(ECHO_PIN, HIGH);
 
     if (distance_cm <= ULTRASOUND_THRESHOLD) {
       destination = STOP;
       stopMotors();
       digitalWrite(PIN_Motor_STBY, LOW);
+      Serial.print("2");
+      Serial.print(distance_cm);
+      Serial.print("|");
+      Serial.print("1");
+      Serial.print(millis());
+      Serial.print("|");
     }
 
     xTaskDelayUntil( &xLastWakeTime, ( PERIODIC_ULTRASOUND / portTICK_PERIOD_MS ) );
@@ -133,7 +148,7 @@ static void Ultrasonido(void* pvParameters) {
 
 static void Infrarred(void* pvParameters) {
   TickType_t xLastWakeTime, aux;
-  int irLeft, irMiddle, irRight;
+  int irLeft, irMiddle, irRight, found_line;
 
   if (destination == STOP) return;
 
@@ -141,16 +156,24 @@ static void Infrarred(void* pvParameters) {
     xLastWakeTime = xTaskGetTickCount();
     aux = xLastWakeTime;
     
+    // TODO: add PID and analog read
     irLeft = digitalRead(PIN_ITR20001_LEFT);
     irMiddle = digitalRead(PIN_ITR20001_MIDDLE);
-    irRight = digitalRead(PIN_ITR20001_RIGHT);   
+    irRight = digitalRead(PIN_ITR20001_RIGHT);
+
+    found_line = 1;
 
     if (!irLeft && irMiddle && !irRight) destination = STRAIGHT;
     else if (irLeft && !irMiddle && !irRight) destination = TURN_RIGHT;
     else if (!irLeft && !irMiddle && irRight) destination = TURN_LEFT;
     else if (irLeft && irMiddle && !irRight) destination = TURN_SLIGHTLY_RIGHT;
     else if (!irLeft && irMiddle && irRight) destination = TURN_SLIGHTLY_LEFT;
-    else destination = last_destination;
+    else {
+      destination = last_destination;
+      found_line = 0;
+    }
+    // if (found_line) FastLED.showColor(Color(0, 255, 0));
+    // else FastLED.showColor(Color(255, 0, 0));
 
     last_destination = destination;
 
@@ -158,7 +181,6 @@ static void Infrarred(void* pvParameters) {
        
   }
 }
-
 
 static void Motors(void * args) {
   TickType_t xLastWakeTime, aux;
@@ -190,11 +212,21 @@ static void Motors(void * args) {
 
 }
 
+unsigned long last_ping = -4000;
+
 static void idleTask(void * arg) {
   TickType_t xLastWakeTime, aux;
   while (1) {
     xLastWakeTime = xTaskGetTickCount();
-    // send_msg->send_message();
+    // Not entering
+    Serial.print("4");
+    Serial.print(millis());
+    Serial.print("|");
+    if (millis() - last_ping > 4000) {
+      // Send ping
+      last_ping = millis();
+      return;
+    }
     xTaskDelayUntil( &xLastWakeTime, (PERIODIC_IDLE / portTICK_PERIOD_MS));
   }
 }
@@ -221,11 +253,16 @@ void setup() {
   pinMode(PIN_ITR20001_MIDDLE, INPUT);
   pinMode(PIN_ITR20001_RIGHT, INPUT);
 
-  // send_msg->wait_connection();
+  // FastLED.addLeds<NEOPIXEL, PIN_RBGLED>(leds, NUM_LEDS);
+  // FastLED.setBrightness(20);
+
+  //send_msg->wait_connection();
   xTaskCreate(idleTask, "IdleTask", 100, NULL, 0, NULL);
   xTaskCreate(Motors, "Motors", 100, NULL, 4, NULL);
   xTaskCreate(Infrarred, "Infrarred", 100, NULL, 3, NULL);
   xTaskCreate(Ultrasonido, "Ultrasonido", 100, NULL, 2, NULL);
+  // send_msg->add_message(START_LAP);
+  Serial.print("0|");
 }
 
 void loop() {}

@@ -17,6 +17,7 @@ Messages::Messages(char _team_name[MAX_TEAM_STR_SIZE],
 }
 
 void Messages::add_message(msg_type type) {
+  Serial.println("Added msg");
   struct msg to_send = {type};
   queue[queue_size] = to_send;
   queue_size++;
@@ -92,6 +93,7 @@ void Messages::wait_connection() {
   while(1) {
       if (Serial.available()) {
         char c = Serial.read();
+        Serial.println(c);
         if (c == '}')  { // Wait for message        
           break;
         } 
