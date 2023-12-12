@@ -26,8 +26,8 @@
 #include "Adafruit_MQTT_Client.h"
 
 /************************* WiFi Access Point *********************************/
-#define WLAN_SSID       "network"
-#define WLAN_PASS       "password"
+#define WLAN_SSID       "wifieif"
+#define WLAN_PASS       "Goox0sie_WZCGGh25680000"
 
 /************************* Adafruit.io Setup *********************************/
 #define AIO_SERVER      "193.147.53.2" // (garceta.tsc.urjc.es)
@@ -113,7 +113,7 @@ void loop() {
     if (c == '}')  {            
       Serial.print("Received data in serial port from Arduino: ");
       Serial.println(sendBuff);
-      publisher.publish(c);
+      publisher.publish(sendBuff);
 
       sendBuff = "";
     } 
