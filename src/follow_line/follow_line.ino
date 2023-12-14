@@ -134,8 +134,6 @@ static void Ultrasonido(void* pvParameters) {
     if (distance_cm <= ULTRASOUND_THRESHOLD && in_lap) {
       destination = STOP;
       in_lap = false;
-      stopMotors();
-      digitalWrite(PIN_Motor_STBY, LOW);
       Serial.print("2");
       Serial.print(distance_cm);
       Serial.print("}");
@@ -207,6 +205,10 @@ static void Motors(void * args) {
       break;
     case TURN_SLIGHTLY_RIGHT:
       turnRightSlightly();
+      break;
+    case STOP:
+      stopMotors();
+      digitalWrite(PIN_Motor_STBY, LOW);
       break;
     }
    

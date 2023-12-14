@@ -93,8 +93,7 @@ void Messages::wait_connection() {
   while(1) {
       if (Serial.available()) {
         char c = Serial.read();
-        Serial.println(c);
-        if (c == '}')  { // Wait for message        
+        if (c == '|')  { // Wait for message        
           break;
         } 
 

@@ -86,7 +86,7 @@ void MQTT_connect() {
        }
   }
   Serial.println("MQTT Connected!");
-  Serial2.print("{Start}");
+  Serial2.print("{Start|");
 }
 
 unsigned long get_time(char time[MAX_MSG_LENGTH]) {
@@ -125,13 +125,13 @@ void setup() {
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
 
   initWiFi();
-  Serial2.print("{Start}");
   
 }
 
 String sendBuff;
 char to_send[MAX_MSG_LENGTH];
 char msg_buffer[MAX_MSG_LENGTH];
+char to_cmp;
 
 void loop() {
   MQTT_connect();
@@ -142,10 +142,12 @@ void loop() {
     char c = Serial2.read();
     sendBuff += c;
     
-    if (c == '}')  {            
+    if (c == '}')  {    
       strcpy(msg_buffer, sendBuff.c_str());
+      if (*msg_buffer == '\n') Serial.println("Has new line");
+      else to_cmp = *msg_buffer;
 
-      switch (*msg_buffer) { // Remove 2 initial spaces
+      switch (to_cmp) { // Remove 2 initial spaces
         case '0':
           sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "START_LAP"); // Does not reach
           break;
@@ -174,11 +176,20 @@ void loop() {
           sprintf(to_send, MSG_VAL, TEAM_STR, ID_STR, "VISIBLE_LINE", msg_buffer + 1);
           break;
       }
-      publisher.publish(to_send);
+
+      if (to_send != NULL) {
+        publisher.publish(to_send);
+      }
+        
+      Serial.println("Sendng");
       Serial.println(to_send);
+      Serial.println(msg_buffer);
+      Serial.println(sendBuff);    
 
       sendBuff = "";
-    } 
+    } else if (c == '|')  {
+      sendBuff = "";
+    }
 
 
   }
