@@ -27,13 +27,13 @@
 #include "Messages.hpp"
 
 /************************* WiFi Access Point *********************************/
-#define WLAN_SSID       "wifieif"
+#define WLAN_SSID       "wifieif2"
 #define WLAN_PASS       "Goox0sie_WZCGGh25680000"
 
 /************************* Adafruit.io Setup *********************************/
 #define AIO_SERVER      "193.147.53.2" // (garceta.tsc.urjc.es)
 #define AIO_SERVERPORT  21883
-#define AIO_USERNAME    "/SETR/2023/"
+#define AIO_USERNAME    "/SETR/2023/3/"
 #define AIO_KEY         "key"
 
 // Define specific pins for Serial2.
@@ -41,9 +41,9 @@
 #define TXD2 4
 
 WiFiClient client;
-Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_USERNAME, AIO_KEY);
+Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME);
 
-Adafruit_MQTT_Publish publisher = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "Forocoches");
+Adafruit_MQTT_Publish publisher = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME);
 
 void initWiFi() {
 
@@ -94,7 +94,7 @@ unsigned long get_time(char time[MAX_MSG_LENGTH]) {
   char *ptr = time;
   ptr += 1; // Remove 2 spaces and msg id
 
-  for (ptr; *ptr != '|'; ptr++) {
+  for (ptr; *ptr != '}'; ptr++) {
     if (*ptr >= '0' && *ptr <= '9') {
       curr_num = 10 * curr_num + *ptr - '0';
     }
@@ -108,7 +108,7 @@ int get_dst(char distance[MAX_MSG_LENGTH]) {
   char *ptr = distance;
   ptr += 1; // Remove 2 spaces and msg id
 
-  for (ptr; *ptr != '|'; ptr++) {
+  for (ptr; *ptr != '}'; ptr++) {
     if (*ptr >= '0' && *ptr <= '9') {
       curr_num = 10 * curr_num + *ptr - '0';
     }
@@ -124,7 +124,7 @@ void setup() {
   // Serial port to communicate with Arduino UNO
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
 
-  // initWiFi();
+  initWiFi();
   Serial2.print("{Start}");
   
 }
@@ -134,7 +134,7 @@ char to_send[MAX_MSG_LENGTH];
 char msg_buffer[MAX_MSG_LENGTH];
 
 void loop() {
-  // MQTT_connect();
+  MQTT_connect();
   // We always check if there is data in the serial buffer (max: 64 bytes)
 
   if (Serial2.available()) {
@@ -142,12 +142,12 @@ void loop() {
     char c = Serial2.read();
     sendBuff += c;
     
-    if (c == '|')  {            
+    if (c == '}')  {            
       strcpy(msg_buffer, sendBuff.c_str());
 
       switch (*msg_buffer) { // Remove 2 initial spaces
         case '0':
-          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "START_LAP");
+          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "START_LAP"); // Does not reach
           break;
         case '1':
           sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "END_LAP", get_time(msg_buffer));
@@ -171,12 +171,11 @@ void loop() {
           sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "LINE_FOUND");
           break;
         case '8':
-          sprintf(to_send, MSG_VAL, TEAM_STR, ID_STR, "VISIBLE_LINE", 1.0);
+          sprintf(to_send, MSG_VAL, TEAM_STR, ID_STR, "VISIBLE_LINE", msg_buffer + 1);
           break;
       }
-      //publish.publish(to_send);
+      publisher.publish(to_send);
       Serial.println(to_send);
-      // Serial.println(sendBuff);
 
       sendBuff = "";
     } 

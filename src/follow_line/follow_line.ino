@@ -30,8 +30,8 @@
 #define MEDIUM_SPEED 90
 
 #define PERIODIC_IDLE 150
-#define PERIODIC_MOTORS 50
-#define PERIODIC_INFRARRED 50
+#define PERIODIC_MOTORS 30
+#define PERIODIC_INFRARRED 30
 #define PERIODIC_ULTRASOUND 150
 
 #define ULTRASOUND_THRESHOLD 16
@@ -51,6 +51,8 @@ Messages *send_msg = new Messages("Forocoches", "3");
 CRGB leds[NUM_LEDS];
 directions destination = 0;
 directions last_destination = 0;
+bool in_lap = true;
+unsigned long start_time; 
 
 uint32_t Color(uint8_t r, uint8_t g, uint8_t b) {
   return (((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
@@ -129,16 +131,17 @@ static void Ultrasonido(void* pvParameters) {
     // measure duration of pulse from ECHO pin and calculate the distance
     distance_cm = 0.017 * pulseIn(ECHO_PIN, HIGH);
 
-    if (distance_cm <= ULTRASOUND_THRESHOLD) {
+    if (distance_cm <= ULTRASOUND_THRESHOLD && in_lap) {
       destination = STOP;
+      in_lap = false;
       stopMotors();
       digitalWrite(PIN_Motor_STBY, LOW);
       Serial.print("2");
       Serial.print(distance_cm);
-      Serial.print("|");
+      Serial.print("}");
       Serial.print("1");
-      Serial.print(millis());
-      Serial.print("|");
+      Serial.print(millis() - start_time);
+      Serial.print("}");
     }
 
     xTaskDelayUntil( &xLastWakeTime, ( PERIODIC_ULTRASOUND / portTICK_PERIOD_MS ) );
@@ -218,15 +221,6 @@ static void idleTask(void * arg) {
   TickType_t xLastWakeTime, aux;
   while (1) {
     xLastWakeTime = xTaskGetTickCount();
-    // Not entering
-    Serial.print("4");
-    Serial.print(millis());
-    Serial.print("|");
-    if (millis() - last_ping > 4000) {
-      // Send ping
-      last_ping = millis();
-      return;
-    }
     xTaskDelayUntil( &xLastWakeTime, (PERIODIC_IDLE / portTICK_PERIOD_MS));
   }
 }
@@ -256,13 +250,14 @@ void setup() {
   // FastLED.addLeds<NEOPIXEL, PIN_RBGLED>(leds, NUM_LEDS);
   // FastLED.setBrightness(20);
 
-  //send_msg->wait_connection();
+  send_msg->wait_connection();
   xTaskCreate(idleTask, "IdleTask", 100, NULL, 0, NULL);
   xTaskCreate(Motors, "Motors", 100, NULL, 4, NULL);
   xTaskCreate(Infrarred, "Infrarred", 100, NULL, 3, NULL);
   xTaskCreate(Ultrasonido, "Ultrasonido", 100, NULL, 2, NULL);
-  // send_msg->add_message(START_LAP);
-  Serial.print("0|");
+  
+  Serial.print("0}");
+  start_time = millis();
 }
 
 void loop() {}
