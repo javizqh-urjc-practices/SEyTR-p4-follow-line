@@ -132,10 +132,18 @@ String sendBuff;
 char to_send[MAX_MSG_LENGTH];
 char msg_buffer[MAX_MSG_LENGTH];
 char to_cmp;
+bool in_lap = false;
+unsigned long last_ping = -4001; // Triggers when start lap
+unsigned long start_tm; 
 
 void loop() {
   MQTT_connect();
   // We always check if there is data in the serial buffer (max: 64 bytes)
+  // Check if there is need to send ping
+  if (in_lap && millis() - last_ping > 4000) {
+    sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "PING", millis() - start_tm);
+    publisher.publish(to_send);
+  }
 
   if (Serial2.available()) {
 
@@ -150,9 +158,12 @@ void loop() {
       switch (to_cmp) { // Remove 2 initial spaces
         case '0':
           sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "START_LAP"); // Does not reach
+          start_tm = millis();
+          in_lap = true;
           break;
         case '1':
           sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "END_LAP", get_time(msg_buffer));
+          in_lap = false;
           break;
         case '2':
           sprintf(to_send, MSG_DIST, TEAM_STR, ID_STR, "OBSTACLE_DETECTED", get_dst(msg_buffer));
