@@ -29,9 +29,8 @@
 #define HIGH_SPEED 175
 #define MEDIUM_SPEED 90
 
-#define PERIODIC_IDLE 150
-#define PERIODIC_MOTORS 30
-#define PERIODIC_INFRARRED 30
+#define PERIODIC_MOTORS 20
+#define PERIODIC_INFRARRED 20
 #define PERIODIC_ULTRASOUND 150
 
 #define ULTRASOUND_THRESHOLD 16
@@ -53,6 +52,8 @@ directions destination = 0;
 directions last_destination = 0;
 bool in_lap = true;
 unsigned long start_time; 
+bool in_line = true;
+bool search_line = false;
 
 uint32_t Color(uint8_t r, uint8_t g, uint8_t b) {
   return (((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
@@ -147,6 +148,17 @@ static void Ultrasonido(void* pvParameters) {
   }
 }
 
+#define MIN_THRESH 100
+#define KP 0.5
+#define KI 0
+#define KD 0
+
+int motorSpeedR = 0;
+int motorSpeedL = 0;
+int middleCheck = 1;
+int lastError = 0;
+int middleLost = 0;
+
 static void Infrarred(void* pvParameters) {
   TickType_t xLastWakeTime, aux;
   int irLeft, irMiddle, irRight, found_line;
@@ -158,23 +170,78 @@ static void Infrarred(void* pvParameters) {
     aux = xLastWakeTime;
     
     // TODO: add PID and analog read
-    irLeft = digitalRead(PIN_ITR20001_LEFT);
-    irMiddle = digitalRead(PIN_ITR20001_MIDDLE);
-    irRight = digitalRead(PIN_ITR20001_RIGHT);
+    irLeft = analogRead(PIN_ITR20001_LEFT);
+    irMiddle = analogRead(PIN_ITR20001_MIDDLE);
+    irRight = analogRead(PIN_ITR20001_RIGHT);
 
     found_line = 1;
 
-    if (!irLeft && irMiddle && !irRight) destination = STRAIGHT;
-    else if (irLeft && !irMiddle && !irRight) destination = TURN_RIGHT;
-    else if (!irLeft && !irMiddle && irRight) destination = TURN_LEFT;
-    else if (irLeft && irMiddle && !irRight) destination = TURN_SLIGHTLY_RIGHT;
-    else if (!irLeft && irMiddle && irRight) destination = TURN_SLIGHTLY_LEFT;
-    else {
-      destination = last_destination;
+    if (irMiddle < MIN_THRESH) {
       found_line = 0;
+      in_line = false;
+      if (!in_line && !search_line) {
+        Serial.print("3}");
+        search_line = true;
+      }
+    } else {
+      // Read sensor values (calibrated and mapped)
+      int sensorLeft = map(irLeft, 0, 1000, 0, 255);
+      int sensorRight = map(irRight, 0, 1000, 0, 255);
+
+      // Calculate error
+      int error = sensorLeft - sensorRight;
+      // Cuando no hay error, ir rapido recto
+      // Cuando error derecha mas rapido izquierda y mas lento izquierda
+      // Y viceversa
+      // Update PID components
+      int integral = integral + error;
+      int derivative = error - lastError;
+
+      // Calculate PID output
+      int pidOutput = KP * error + KI * integral + KD * derivative;
+
+      // Adjust motor speeds
+      motorSpeedR = MEDIUM_SPEED - pidOutput;
+      motorSpeedL = MEDIUM_SPEED + pidOutput;
+
+      // Ensure motor speeds are within the valid range
+      motorSpeedL= constrain(motorSpeedL, 0, 255);
+      motorSpeedR = constrain(motorSpeedR, 0, 255);
+
+      lastError = error;
     }
-    // if (found_line) FastLED.showColor(Color(0, 255, 0));
-    // else FastLED.showColor(Color(255, 0, 0));
+
+    // if (irLeft < 700 && irMiddle > 700 && irRight < 700) {
+    //   destination = STRAIGHT;
+    //   in_line = true;
+    //   search_line = false;
+    // } else if (irLeft > 700 && irMiddle < 700 && irRight < 700) {
+    //   destination = TURN_RIGHT;
+    //   in_line = true;
+    //   search_line = false;
+    // } else if (irLeft < 700 && irMiddle < 700 && irRight > 700) {
+    //   destination = TURN_LEFT;
+    //   in_line = true;
+    //   search_line = false;
+    // } else if (irLeft > 700 && irMiddle > 700 && irRight < 700) {
+    //   destination = TURN_SLIGHTLY_RIGHT;
+    //   in_line = true;
+    //   search_line = false;
+    // } else if (irLeft < 700 && irMiddle > 700 && irRight > 700) {
+    //   destination = TURN_SLIGHTLY_LEFT;
+    //   in_line = true;
+    //   search_line = false;
+    // } else {
+    //   destination = last_destination;
+    //   found_line = 0;
+    //   in_line = false;
+    //   if (!in_line && !search_line) {
+    //     Serial.print("3}");
+    //     search_line = true;
+    //   }
+    // }
+    if (found_line) FastLED.showColor(Color(0, 255, 0));
+    else FastLED.showColor(Color(255, 0, 0));
 
     last_destination = destination;
 
@@ -190,41 +257,42 @@ static void Motors(void * args) {
     xLastWakeTime = xTaskGetTickCount();
     aux = xLastWakeTime;
 
-    switch(destination) {
-    case STRAIGHT:
-      moveForward();
-      break;
-    case TURN_LEFT:
-      turnLeft();
-      break;
-    case TURN_SLIGHTLY_LEFT:
-      turnLeftSlightly();
-      break;
-    case TURN_RIGHT:
-      turnRight();
-      break;
-    case TURN_SLIGHTLY_RIGHT:
-      turnRightSlightly();
-      break;
-    case STOP:
+    // switch(destination) {
+    // case STRAIGHT:
+    //   moveForward();
+    //   break;
+    // case TURN_LEFT:
+    //   turnLeft();
+    //   break;
+    // case TURN_SLIGHTLY_LEFT:
+    //   turnLeftSlightly();
+    //   break;
+    // case TURN_RIGHT:
+    //   turnRight();
+    //   break;
+    // case TURN_SLIGHTLY_RIGHT:
+    //   turnRightSlightly();
+    //   break;
+    // case STOP:
+    //   stopMotors();
+    //   digitalWrite(PIN_Motor_STBY, LOW);
+    //   break;
+    // }
+    if (destination == STOP) {
       stopMotors();
       digitalWrite(PIN_Motor_STBY, LOW);
-      break;
+    } else {
+      analogWrite(PIN_Motor_PWMA, motorSpeedR);
+      analogWrite(PIN_Motor_PWMB, motorSpeedL);
+
+      digitalWrite(PIN_Motor_AIN_1, HIGH);
+      digitalWrite(PIN_Motor_BIN_1, HIGH);
     }
+
    
     xTaskDelayUntil( &xLastWakeTime, ( PERIODIC_MOTORS / portTICK_PERIOD_MS ) );
   }
 
-}
-
-unsigned long last_ping = -4000;
-
-static void idleTask(void * arg) {
-  TickType_t xLastWakeTime, aux;
-  while (1) {
-    xLastWakeTime = xTaskGetTickCount();
-    xTaskDelayUntil( &xLastWakeTime, (PERIODIC_IDLE / portTICK_PERIOD_MS));
-  }
 }
 
 void setup() {
@@ -249,11 +317,10 @@ void setup() {
   pinMode(PIN_ITR20001_MIDDLE, INPUT);
   pinMode(PIN_ITR20001_RIGHT, INPUT);
 
-  // FastLED.addLeds<NEOPIXEL, PIN_RBGLED>(leds, NUM_LEDS);
-  // FastLED.setBrightness(20);
+  FastLED.addLeds<NEOPIXEL, PIN_RBGLED>(leds, NUM_LEDS);
+  FastLED.setBrightness(20);
 
   send_msg->wait_connection();
-  xTaskCreate(idleTask, "IdleTask", 100, NULL, 0, NULL);
   xTaskCreate(Motors, "Motors", 100, NULL, 4, NULL);
   xTaskCreate(Infrarred, "Infrarred", 100, NULL, 3, NULL);
   xTaskCreate(Ultrasonido, "Ultrasonido", 100, NULL, 2, NULL);

@@ -25,10 +25,14 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 #include "Messages.hpp"
+#include "private.h"
 
 /************************* WiFi Access Point *********************************/
-#define WLAN_SSID       "wifieif2"
-#define WLAN_PASS       "Goox0sie_WZCGGh25680000"
+#define EAP_ANONYMOUS_IDENTITY "20220719anonymous@urjc.es" // leave as it is
+
+//SSID NAME
+const char* ssid = "eduroam"; // eduroam SSID
+
 
 /************************* Adafruit.io Setup *********************************/
 #define AIO_SERVER      "193.147.53.2" // (garceta.tsc.urjc.es)
@@ -47,8 +51,10 @@ Adafruit_MQTT_Publish publisher = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME);
 
 void initWiFi() {
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WLAN_SSID, WLAN_PASS);
+  Serial.println(ssid);
+  WiFi.disconnect(true);
+
+  WiFi.begin(ssid, WPA2_AUTH_PEAP, EAP_IDENTITY, EAP_USERNAME, EAP_PASSWORD);
   Serial.print("Connecting to WiFi ..");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print('.');
@@ -133,6 +139,7 @@ char to_send[MAX_MSG_LENGTH];
 char msg_buffer[MAX_MSG_LENGTH];
 char to_cmp;
 bool in_lap = false;
+bool end_lap = false;
 unsigned long last_ping = -4001; // Triggers when start lap
 unsigned long start_tm; 
 
@@ -142,11 +149,12 @@ void loop() {
   // Check if there is need to send ping
   if (in_lap && millis() - last_ping > 4000) {
     sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "PING", millis() - start_tm);
+    last_ping = millis();
+    Serial.println(to_send);
     publisher.publish(to_send);
   }
 
-  if (Serial2.available()) {
-
+  if (Serial2.available() && !end_lap) {
     char c = Serial2.read();
     sendBuff += c;
     
@@ -164,6 +172,7 @@ void loop() {
         case '1':
           sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "END_LAP", get_time(msg_buffer));
           in_lap = false;
+          end_lap = true;
           break;
         case '2':
           sprintf(to_send, MSG_DIST, TEAM_STR, ID_STR, "OBSTACLE_DETECTED", get_dst(msg_buffer));
