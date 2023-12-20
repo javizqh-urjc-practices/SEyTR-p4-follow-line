@@ -172,7 +172,6 @@ void loop() {
         case '1':
           sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "END_LAP", get_time(msg_buffer));
           in_lap = false;
-          end_lap = true;
           break;
         case '2':
           sprintf(to_send, MSG_DIST, TEAM_STR, ID_STR, "OBSTACLE_DETECTED", get_dst(msg_buffer));
@@ -194,6 +193,7 @@ void loop() {
           break;
         case '8':
           sprintf(to_send, MSG_VAL, TEAM_STR, ID_STR, "VISIBLE_LINE", msg_buffer + 1);
+          end_lap = true;
           break;
       }
 
