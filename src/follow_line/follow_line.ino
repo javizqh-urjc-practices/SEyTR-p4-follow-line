@@ -183,11 +183,6 @@ static void Infrarred(void* pvParameters) {
 
     if (irMiddle < MIN_THRESH) {
       found_line = 0;
-      in_line = false;
-      if (!in_line && !search_line) {
-        Serial.print("3}");
-        search_line = true;
-      }
     } else {
       // Read sensor values (calibrated and mapped)
       int sensorLeft = map(irLeft, 0, 1000, 0, 255);
@@ -206,8 +201,8 @@ static void Infrarred(void* pvParameters) {
       int pidOutput = KP * error + KI * integral + KD * derivative;
 
       // Adjust motor speeds
-      motorSpeedR = MEDIUM_SPEED - pidOutput;
-      motorSpeedL = MEDIUM_SPEED + pidOutput;
+      motorSpeedR = MEDIUM_SPEED + pidOutput;
+      motorSpeedL = MEDIUM_SPEED - pidOutput;
 
       // Ensure motor speeds are within the valid range
       motorSpeedL= constrain(motorSpeedL, 0, 255);
@@ -216,20 +211,21 @@ static void Infrarred(void* pvParameters) {
       lastError = error;
     }
 
-    if (irLeft < 700 && irMiddle > 700 && irRight < 700) {
-      destination = STRAIGHT;
-    } else if (irLeft > 700 && irMiddle < 700 && irRight < 700) {
-      destination = TURN_RIGHT;
-    } else if (irLeft < 700 && irMiddle < 700 && irRight > 700) {
-      destination = TURN_LEFT;
-    } else if (irLeft > 700 && irMiddle > 700 && irRight < 700) {
-      destination = TURN_SLIGHTLY_RIGHT;
-    } else if (irLeft < 700 && irMiddle > 700 && irRight > 700) {
-      destination = TURN_SLIGHTLY_LEFT;
-    } else {
-      destination = last_destination;
-      found_line = 0;
-    }
+    // if (irLeft < 700 && irMiddle > 700 && irRight < 700) {
+    //   destination = STRAIGHT;
+    // } else if (irLeft > 700 && irMiddle < 700 && irRight < 700) {
+    //   destination = TURN_RIGHT;
+    // } else if (irLeft < 700 && irMiddle < 700 && irRight > 700) {
+    //   destination = TURN_LEFT;
+    // } else if (irLeft > 700 && irMiddle > 700 && irRight < 700) {
+    //   destination = TURN_SLIGHTLY_RIGHT;
+    // } else if (irLeft < 700 && irMiddle > 700 && irRight > 700) {
+    //   destination = TURN_SLIGHTLY_LEFT;
+    // } else {
+    //   destination = last_destination;
+    //   found_line = 0;
+    // }
+
     if (found_line) {
       FastLED.showColor(Color(0, 255, 0));
       if (search_line) {
