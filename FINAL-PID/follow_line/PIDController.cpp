@@ -1,5 +1,4 @@
 #include "PIDController.hpp"
-#include <stdlib.h>
 
 PIDController::PIDController(double min_ref, double max_ref, double min_output, double max_output)
 {
@@ -30,17 +29,17 @@ PIDController::get_output(double new_reference)
 
   // Proportional Error
   double direction = 0.0;
-  if (ref != 0.0) {
-    direction = ref / abs(ref);
-  }
+  // if (ref != 0.0) {
+  //   direction = ref / fabs(ref);
+  // }
 
-  if (abs(ref) < min_ref_) {
-    output = 0.0;
-  } else if (abs(ref) > max_ref_) {
-    output = direction * max_output_;
-  } else {
-    output = direction * min_output_ + ref * (max_output_ - min_output_);
-  }
+  // if (fabs(ref) < min_ref_) {
+  //   output = 0.0;
+  // } else if (fabs(ref) > max_ref_) {
+  //   output = direction * max_output_;
+  // } else {
+  //   output = direction * min_output_ + ref * (max_output_ - min_output_);
+  // }
 
   // Integral Error
   int_error_ = (int_error_ + output) * 2.0 / 3.0;
@@ -51,5 +50,6 @@ PIDController::get_output(double new_reference)
 
   output = KP_ * output + KI_ * int_error_ + KD_ * deriv_error;
 
-  return constrain(output, -max_output_, max_output_);
+  // return std::clamp(output, -max_output_, max_output_);
+  return 1;
 }

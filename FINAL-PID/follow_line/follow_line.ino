@@ -1,6 +1,5 @@
 #include <Arduino_FreeRTOS.h>
 #include "Messages.hpp"
-#include "PIDController.hpp"
 #include "FastLED.h"
 
 #define TRIG_PIN 13  
@@ -26,15 +25,15 @@
 // PIN_Motor_PWMB: Analog output [0-255]. It provides speed.
 #define PIN_Motor_PWMB 6
 
-// Speeds, from 0-255
 #define HIGH_SPEED 175
-#define MEDIUM_SPEED 90
+#define MEDIUM_SPEED 160 
+#define PID_SPEED 110
 
-#define PERIODIC_MOTORS 20
-#define PERIODIC_INFRARRED 20
+#define PERIODIC_MOTORS 20 
+#define PERIODIC_INFRARRED 20 
 #define PERIODIC_ULTRASOUND 150
 
-#define ULTRASOUND_THRESHOLD 16
+#define ULTRASOUND_THRESHOLD 10
 #define PIN_RBGLED 4
 #define NUM_LEDS 1
 
@@ -155,17 +154,15 @@ static void Ultrasonido(void* pvParameters) {
 }
 
 #define MIN_THRESH 100
-#define KP 0.5
+#define KP 0.50
 #define KI 0
-#define KD 0
-
+#define KD 0.6
+//FUNCIONA CON KP= 0.5, MED_SPEED= 90
 int motorSpeedR = 0;
 int motorSpeedL = 0;
 int middleCheck = 1;
 int lastError = 0;
 int middleLost = 0;
-
-pid = PIDController(-1000,1000,-255,255);
 
 static void Infrarred(void* pvParameters) {
   TickType_t xLastWakeTime, aux;
@@ -187,14 +184,37 @@ static void Infrarred(void* pvParameters) {
     if (irMiddle < MIN_THRESH) {
       found_line = 0;
     } else {
-      double result = pid.get_output(irLeft - irRight);
-      if (result > 0) {
-        motorSpeedL = result;
-        motorSpeedR = result / 2;
+      // Read sensor values (calibrated and mapped)
+      int sensorLeft = map(irLeft, 60, 900, 0, 255);
+      int sensorRight = map(irRight, 60, 900, 0, 255);
+
+      // Calculate error
+      int direction = sensorLeft - sensorRight;
+      int error = sensorLeft - sensorRight;
+      // Cuando no hay error, ir rapido recto
+      // Cuando error derecha mas rapido izquierda y mas lento izquierda
+      // Y viceversa
+      // Update PID components
+      int integral = integral + error;
+      int derivative = error - lastError;
+
+      // Calculate PID output
+      int pidOutput = KP * error + KI * integral + KD * derivative;
+
+      // Adjust motor speeds
+      if (direction > 0) {
+        motorSpeedR = PID_SPEED + pidOutput;
+        motorSpeedL = PID_SPEED - pidOutput;
       } else {
-        motorSpeedR = - result;
-        motorSpeedL = - result / 2;        
+        motorSpeedR = PID_SPEED + pidOutput;
+        motorSpeedL = PID_SPEED - pidOutput;
       }
+
+      // Ensure motor speeds are within the valid range
+      motorSpeedL= constrain(motorSpeedL, 0, 255);
+      motorSpeedR = constrain(motorSpeedR, 0, 255);
+
+      lastError = error;
     }
 
     // if (irLeft < 700 && irMiddle > 700 && irRight < 700) {

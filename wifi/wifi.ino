@@ -131,7 +131,6 @@ void setup() {
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
 
   initWiFi();
-  
 }
 
 String sendBuff;
