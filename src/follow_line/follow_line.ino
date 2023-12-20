@@ -192,8 +192,8 @@ static void Infrarred(void* pvParameters) {
         motorSpeedL = result;
         motorSpeedR = result / 2;
       } else {
-        motorSpeedR = result;
-        motorSpeedL = result / 2;        
+        motorSpeedR = - result;
+        motorSpeedL = - result / 2;        
       }
     }
 
