@@ -144,7 +144,7 @@ static void Ultrasonido(void* pvParameters) {
       Serial.print(millis() - start_time);
       Serial.print("}");
       Serial.print("8");
-      Serial.print(total_lines_lost / total_lines_searched);
+      Serial.print((total_lines_lost * 100)/ total_lines_searched);
       Serial.print("}");
     }
 
