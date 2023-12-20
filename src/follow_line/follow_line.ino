@@ -54,6 +54,8 @@ bool in_lap = true;
 unsigned long start_time; 
 bool in_line = true;
 bool search_line = false;
+double total_lines_searched = 0;
+double total_lines_lost = 0;
 
 uint32_t Color(uint8_t r, uint8_t g, uint8_t b) {
   return (((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
@@ -141,6 +143,9 @@ static void Ultrasonido(void* pvParameters) {
       Serial.print("1");
       Serial.print(millis() - start_time);
       Serial.print("}");
+      Serial.print("8");
+      Serial.print(total_lines_lost / total_lines_searched);
+      Serial.print("}");
     }
 
     xTaskDelayUntil( &xLastWakeTime, ( PERIODIC_ULTRASOUND / portTICK_PERIOD_MS ) );
@@ -211,37 +216,39 @@ static void Infrarred(void* pvParameters) {
       lastError = error;
     }
 
-    // if (irLeft < 700 && irMiddle > 700 && irRight < 700) {
-    //   destination = STRAIGHT;
-    //   in_line = true;
-    //   search_line = false;
-    // } else if (irLeft > 700 && irMiddle < 700 && irRight < 700) {
-    //   destination = TURN_RIGHT;
-    //   in_line = true;
-    //   search_line = false;
-    // } else if (irLeft < 700 && irMiddle < 700 && irRight > 700) {
-    //   destination = TURN_LEFT;
-    //   in_line = true;
-    //   search_line = false;
-    // } else if (irLeft > 700 && irMiddle > 700 && irRight < 700) {
-    //   destination = TURN_SLIGHTLY_RIGHT;
-    //   in_line = true;
-    //   search_line = false;
-    // } else if (irLeft < 700 && irMiddle > 700 && irRight > 700) {
-    //   destination = TURN_SLIGHTLY_LEFT;
-    //   in_line = true;
-    //   search_line = false;
-    // } else {
-    //   destination = last_destination;
-    //   found_line = 0;
-    //   in_line = false;
-    //   if (!in_line && !search_line) {
-    //     Serial.print("3}");
-    //     search_line = true;
-    //   }
-    // }
-    if (found_line) FastLED.showColor(Color(0, 255, 0));
-    else FastLED.showColor(Color(255, 0, 0));
+    if (irLeft < 700 && irMiddle > 700 && irRight < 700) {
+      destination = STRAIGHT;
+    } else if (irLeft > 700 && irMiddle < 700 && irRight < 700) {
+      destination = TURN_RIGHT;
+    } else if (irLeft < 700 && irMiddle < 700 && irRight > 700) {
+      destination = TURN_LEFT;
+    } else if (irLeft > 700 && irMiddle > 700 && irRight < 700) {
+      destination = TURN_SLIGHTLY_RIGHT;
+    } else if (irLeft < 700 && irMiddle > 700 && irRight > 700) {
+      destination = TURN_SLIGHTLY_LEFT;
+    } else {
+      destination = last_destination;
+      found_line = 0;
+    }
+    if (found_line) {
+      FastLED.showColor(Color(0, 255, 0));
+      if (search_line) {
+        Serial.print("6}");
+        Serial.print("7}");
+      }
+      total_lines_searched++;
+      in_line = true;
+      search_line = false;
+    } else {
+      FastLED.showColor(Color(255, 0, 0));
+      in_line = false;
+      if (!in_line && !search_line) {
+        Serial.print("3}");
+        Serial.print("5}");
+        search_line = true;
+      }
+      total_lines_lost++;
+    }
 
     last_destination = destination;
 
