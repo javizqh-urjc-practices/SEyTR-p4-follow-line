@@ -1,5 +1,6 @@
 #include <Arduino_FreeRTOS.h>
 #include "Messages.hpp"
+#include "PIDController.hpp"
 #include "FastLED.h"
 
 #define TRIG_PIN 13  
@@ -164,6 +165,8 @@ int middleCheck = 1;
 int lastError = 0;
 int middleLost = 0;
 
+pid = PIDController(-1000,1000,-255,255);
+
 static void Infrarred(void* pvParameters) {
   TickType_t xLastWakeTime, aux;
   int irLeft, irMiddle, irRight, found_line;
@@ -184,31 +187,14 @@ static void Infrarred(void* pvParameters) {
     if (irMiddle < MIN_THRESH) {
       found_line = 0;
     } else {
-      // Read sensor values (calibrated and mapped)
-      int sensorLeft = map(irLeft, 0, 1000, 0, 255);
-      int sensorRight = map(irRight, 0, 1000, 0, 255);
-
-      // Calculate error
-      int error = sensorLeft - sensorRight;
-      // Cuando no hay error, ir rapido recto
-      // Cuando error derecha mas rapido izquierda y mas lento izquierda
-      // Y viceversa
-      // Update PID components
-      int integral = integral + error;
-      int derivative = error - lastError;
-
-      // Calculate PID output
-      int pidOutput = KP * error + KI * integral + KD * derivative;
-
-      // Adjust motor speeds
-      motorSpeedR = MEDIUM_SPEED + pidOutput;
-      motorSpeedL = MEDIUM_SPEED - pidOutput;
-
-      // Ensure motor speeds are within the valid range
-      motorSpeedL= constrain(motorSpeedL, 0, 255);
-      motorSpeedR = constrain(motorSpeedR, 0, 255);
-
-      lastError = error;
+      double result = pid.get_output(irLeft - irRight);
+      if (result > 0) {
+        motorSpeedL = result;
+        motorSpeedR = result / 2;
+      } else {
+        motorSpeedR = result;
+        motorSpeedL = result / 2;        
+      }
     }
 
     // if (irLeft < 700 && irMiddle > 700 && irRight < 700) {
