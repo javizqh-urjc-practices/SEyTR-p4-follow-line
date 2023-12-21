@@ -154,17 +154,6 @@ static void Ultrasonido(void* pvParameters) {
   }
 }
 
-#define MIN_THRESH 100
-#define KP 0.50
-#define KI 0
-#define KD 0.6
-//FUNCIONA CON KP= 0.5, MED_SPEED= 90
-int motorSpeedR = 0;
-int motorSpeedL = 0;
-int middleCheck = 1;
-int lastError = 0;
-int middleLost = 0;
-
 static void Infrarred(void* pvParameters) {
   TickType_t xLastWakeTime, aux;
   int irLeft, irMiddle, irRight, found_line;
