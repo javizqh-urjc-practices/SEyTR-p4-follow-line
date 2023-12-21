@@ -144,11 +144,12 @@ static void Ultrasonido(void* pvParameters) {
       Serial.print(millis() - start_time);
       Serial.print("}");
       Serial.print("8");
-      Serial.print(((total_lines_searched - total_lines_lost) * 100)/ total_lines_searched);
+      Serial.print(((total_lines_searched - total_lines_lost) * 100)/
+                     total_lines_searched);
       Serial.print("}");
     }
 
-    xTaskDelayUntil( &xLastWakeTime, ( PERIODIC_ULTRASOUND / portTICK_PERIOD_MS ) );
+    xTaskDelayUntil(&xLastWakeTime, (PERIODIC_ULTRASOUND / portTICK_PERIOD_MS));
        
   }
 }
@@ -179,42 +180,6 @@ static void Infrarred(void* pvParameters) {
     irRight = analogRead(PIN_ITR20001_RIGHT);
 
     found_line = 1;
-
-    // if (irMiddle < MIN_THRESH) {
-    //   found_line = 0;
-    // } else {
-    //   // Read sensor values (calibrated and mapped)
-    //   int sensorLeft = map(irLeft, 60, 900, 0, 255);
-    //   int sensorRight = map(irRight, 60, 900, 0, 255);
-
-    //   // Calculate error
-    //   int direction = sensorLeft - sensorRight;
-    //   int error = sensorLeft - sensorRight;
-    //   // Cuando no hay error, ir rapido recto
-    //   // Cuando error derecha mas rapido izquierda y mas lento izquierda
-    //   // Y viceversa
-    //   // Update PID components
-    //   int integral = integral + error;
-    //   int derivative = error - lastError;
-
-    //   // Calculate PID output
-    //   int pidOutput = KP * error + KI * integral + KD * derivative;
-
-    //   // Adjust motor speeds
-    //   if (direction > 0) {
-    //     motorSpeedR = PID_SPEED + pidOutput;
-    //     motorSpeedL = PID_SPEED - pidOutput;
-    //   } else {
-    //     motorSpeedR = PID_SPEED + pidOutput;
-    //     motorSpeedL = PID_SPEED - pidOutput;
-    //   }
-
-    //   // Ensure motor speeds are within the valid range
-    //   motorSpeedL= constrain(motorSpeedL, 0, 255);
-    //   motorSpeedR = constrain(motorSpeedR, 0, 255);
-
-    //   lastError = error;
-    // }
 
     if (irLeft < 700 && irMiddle > 700 && irRight < 700) {
       destination = STRAIGHT;
@@ -253,7 +218,7 @@ static void Infrarred(void* pvParameters) {
 
     last_destination = destination;
 
-    xTaskDelayUntil( &xLastWakeTime, ( PERIODIC_INFRARRED / portTICK_PERIOD_MS ) );
+    xTaskDelayUntil(&xLastWakeTime, (PERIODIC_INFRARRED / portTICK_PERIOD_MS));
        
   }
 }
@@ -286,17 +251,6 @@ static void Motors(void * args) {
       digitalWrite(PIN_Motor_STBY, LOW);
       break;
     }
-    // if (destination == STOP) {
-    //   stopMotors();
-    //   digitalWrite(PIN_Motor_STBY, LOW);
-    // } else {
-    //   analogWrite(PIN_Motor_PWMA, motorSpeedR);
-    //   analogWrite(PIN_Motor_PWMB, motorSpeedL);
-
-    //   digitalWrite(PIN_Motor_AIN_1, HIGH);
-    //   digitalWrite(PIN_Motor_BIN_1, HIGH);
-    // }
-
    
     xTaskDelayUntil( &xLastWakeTime, ( PERIODIC_MOTORS / portTICK_PERIOD_MS ) );
   }

@@ -25,10 +25,6 @@ typedef struct msg {
 class Messages {
 public:
     Messages(char team_name[MAX_TEAM_STR_SIZE], char team_id[MAX_ID_STR_SIZE]);
-    void add_message(msg_type type); // For messages without values
-    void add_message(msg_type type, int distance); // For messages with distance
-    void add_message(msg_type type, float val); // For messages with percentage
-    void send_message();
     void wait_connection();
 
 private:

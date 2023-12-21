@@ -1,26 +1,3 @@
-/*
-* Copyright (C) 2022 by Roberto Calvo-Palomino
-*
-*
-*  This programa is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*
-*  This program is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*
-*  You should have received a copy of the GNU General Public License
-*  along with RTL-Spec.  If not, see <http://www.gnu.org/licenses/>.
-*
-*   Authors: Roberto Calvo-Palomino <roberto.calvo [at] urjc [dot] es>
-*/
-
-// Subject: Sistemas Empotrados y de Tiempo Real
-// Universidad Rey Juan Carlos, Spain
-
 #include "WiFi.h"
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
@@ -144,7 +121,7 @@ unsigned long start_tm;
 
 void loop() {
   MQTT_connect();
-  // We always check if there is data in the serial buffer (max: 64 bytes)
+  
   // Check if there is need to send ping
   if (in_lap && millis() - last_ping > 4000) {
     sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "PING", millis() - start_tm);
@@ -153,6 +130,7 @@ void loop() {
     publisher.publish(to_send);
   }
 
+  // We always check if there is data in the serial buffer (max: 64 bytes)
   if (Serial2.available() && !end_lap) {
     char c = Serial2.read();
     sendBuff += c;
@@ -162,24 +140,27 @@ void loop() {
       if (*msg_buffer == '\n') Serial.println("Has new line");
       else to_cmp = *msg_buffer;
 
-      switch (to_cmp) { // Remove 2 initial spaces
+      switch (to_cmp) {
         case '0':
-          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "START_LAP"); // Does not reach
+          sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "START_LAP");
           start_tm = millis();
           in_lap = true;
           break;
         case '1':
-          sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "END_LAP", get_time(msg_buffer));
+          sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "END_LAP",
+                  get_time(msg_buffer));
           in_lap = false;
           break;
         case '2':
-          sprintf(to_send, MSG_DIST, TEAM_STR, ID_STR, "OBSTACLE_DETECTED", get_dst(msg_buffer));
+          sprintf(to_send, MSG_DIST, TEAM_STR, ID_STR, "OBSTACLE_DETECTED",
+                  get_dst(msg_buffer));
           break;
         case '3':
           sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "LINE_LOST");
           break;
         case '4':
-          sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "PING", get_time(msg_buffer));
+          sprintf(to_send, MSG_TIME, TEAM_STR, ID_STR, "PING",
+                  get_time(msg_buffer));
           break;
         case '5':
           sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "INIT_LINE_SEARCH");
@@ -191,7 +172,8 @@ void loop() {
           sprintf(to_send, MSG_BASE, TEAM_STR, ID_STR, "LINE_FOUND");
           break;
         case '8':
-          sprintf(to_send, MSG_VAL, TEAM_STR, ID_STR, "VISIBLE_LINE", msg_buffer + 1);
+          sprintf(to_send, MSG_VAL, TEAM_STR, ID_STR, "VISIBLE_LINE",
+                  msg_buffer + 1);
           end_lap = true;
           break;
       }
@@ -200,10 +182,10 @@ void loop() {
         publisher.publish(to_send);
       }
         
-      Serial.println("Sendng");
-      Serial.println(to_send);
-      Serial.println(msg_buffer);
-      Serial.println(sendBuff);    
+      // For debugging purposes
+      // Serial.println(to_send);
+      // Serial.println(msg_buffer);
+      // Serial.println(sendBuff);    
 
       sendBuff = "";
     } else if (c == '|')  {
